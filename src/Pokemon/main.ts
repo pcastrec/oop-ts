@@ -22,4 +22,4 @@ sacha.capturer(renard)
 
 sacha.computer.relacher(bulbi)
 
-console.log('Sacha', sacha.computer.pokemons)
+console.log('Sacha', sacha)
