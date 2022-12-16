@@ -1,10 +1,10 @@
 export abstract class Character {
 
-    private name: string;
-    private maxHp: number;
-    private hp: number;
-    protected xp: number;
-    private isAlive: boolean = true;
+    public name: string;
+    public maxHp: number;
+    public hp: number;
+    public xp: number;
+    public isAlive: boolean = true;
 
     constructor(name: string, maxHp: number, xp: number) {
         this.name = name;
