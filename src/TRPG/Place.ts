@@ -50,7 +50,7 @@ export class Place {
                     player.xp += e.xp;
                     console.log("You earned " + e.xp + " XP!");
                     const rest: boolean = (Math.random() * 5 + 1 <= 2.25);
-                    const gold: number = Number(Math.random() * e.xp);
+                    const gold: number = Math.floor(Math.random() * e.xp);
                     if(rest) {
                         player.restLeft++;
                         console.log("You earned an additional rest!");
