@@ -2,15 +2,16 @@ import prompt from "prompt";
 import { Enemy } from "./Enemy";
 import { Place } from "./Place";
 import { Player } from "./Player";
+import { Printer } from "./Printer";
 
 export class GameLogic {
 
     private player!: Player
-    private isRunning: boolean = false
     static place: number = 0;
 
     constructor() {
         prompt.start();
+        prompt.message = '>';
     }
 
     public static initPlaces(): Place[] {
@@ -20,12 +21,12 @@ export class GameLogic {
         const town: Place = new Place("Town", 0, [
             new Enemy("Rat", 10),
             new Enemy("Little boy", 10)
-        ], ["Battle", "Chest"]);
+        ], ["Battle", "Shop", "Chest"]);
 
         const forest: Place = new Place("Forest", 1, [
             new Enemy("Wolf", 20),
             new Enemy("WereWolf", 50)
-        ], ["Rest", "Battle", "Battle"]);
+        ], ["Rest", "Shop", "Battle", "Battle"]);
 
         const castle: Place = new Place("Castle", 2, [
             new Enemy("Swordman", 30),
@@ -65,15 +66,14 @@ export class GameLogic {
             }
         } while (!nameSet)
 
-        this.isRunning = true
         await this.gameLoop()
     }
 
     public async gameLoop() {
-        while (this.isRunning) {
-            this.printMenu();
+        while (this.player.isAlive) {
+            Printer.menu(GameLogic.initPlaces()[GameLogic.place].name);
             try {
-                const input = await GameLogic.readInt("-> ", 3);
+                const input = await GameLogic.readInt(3);
                 switch (input) {
                     case 1:
                         await this.continueJourney();
@@ -84,7 +84,7 @@ export class GameLogic {
                         await GameLogic.toContinue();
                         break;
                     default:
-                        this.isRunning = false;
+                        this.player.setAlive(false);
                         break;
                 }
             } catch (e) {
@@ -93,39 +93,13 @@ export class GameLogic {
         }
     }
 
-    public static printSeparator(n: number) {
-        let separator: string = ''
-        for (let i = 0; i < n; i++) {
-            separator += "-";
-        }
-        console.log(separator);
-    }
-
-    public static printHeading(title: string) {
-        GameLogic.printSeparator(30);
-        console.log(title);
-        GameLogic.printSeparator(30);
-    }
-
-    public printMenu() {
-        // console.clear()
-        GameLogic.printHeading(GameLogic.initPlaces()[GameLogic.place].name);
-        console.log("Choose an action: ");
-        GameLogic.printSeparator(20);
-        console.log("(1) Continue on your journey");
-        console.log("(2) Character Information");
-        console.log("(3) Exit Game");
-    }
-
-    public static async readInt(q: string, userChoice: number): Promise<number> {
+    public static async readInt(userChoice: number): Promise<number> {
         let input: number;
 
         do {
-            console.log(q);
             try {
-                // input = Integer.parseInt(scan.next());
-                const { i } = await prompt.get(['i'])
-                input = Number(i)
+                const { choice } = await prompt.get(['choice'])
+                input = Number(choice)
             } catch (e) {
                 input = -1;
                 console.log("Please select a choice !");
@@ -142,8 +116,7 @@ export class GameLogic {
     public async continueJourney() {
         await this.checkAct();
         if (GameLogic.place != 3) {
-            console.log(GameLogic.initPlaces()[GameLogic.place])
-            GameLogic.initPlaces()[GameLogic.place].randomEncounter(this.player);
+            await GameLogic.initPlaces()[GameLogic.place].randomEncounter(this.player);
         }
     }
 
@@ -163,7 +136,34 @@ export class GameLogic {
             console.log("THIRD ACT OUTRO");
             await this.player.chooseTraits();
             console.log("FOURTH ACT INTRO");
-            // finalBattle();
+            await this.finalBattle();
         }
+    }
+
+    public static async shop(player: Player) {
+        console.clear()
+        Printer.heading('You meet a mysterious stranger.\nHe offers you something')
+        const price: number = Math.floor(Math.random() * 10 + player.pots * 3) + 10  + player.pots
+        console.log(`- Magic Potion: ${price} gold`)
+        Printer.separator(20)
+        console.log(`Do you want to buy one?\n(1) Yes !\n(2) No thanks.`)
+        const input = await GameLogic.readInt(2)
+        if(input === 1) {
+            console.clear()
+            if(player.gold >= price) {
+                Printer.heading(`You bought a magical potion for ${price} gold`)
+                player.pots++
+                player.gold -= price
+            } else {
+                Printer.heading("You don't have enough gold to buy this ...")
+            }
+        }
+        await this.toContinue()
+    }
+
+    public async finalBattle() {
+        await GameLogic.initPlaces()[GameLogic.place].randomBattle(this.player);
+        console.log("THIS IS THE END");
+        process.exit(0)
     }
 }

@@ -1,6 +1,6 @@
-import prompt from "prompt";
 import { Character } from "./Character";
 import { GameLogic } from "./GameLogic";
+import { Printer } from "./Printer";
 
 export class Player extends Character {
 
@@ -8,6 +8,7 @@ export class Player extends Character {
     private numDefUpgrades: number
 
     public gold: number
+    public pots: number
     public restLeft: number
 
     private atkUpgrades: string[] = ["Strength", "Power", "Might", "Godlike"];
@@ -19,40 +20,35 @@ export class Player extends Character {
         this.numDefUpgrades = 0;
 
         this.gold = 5;
+        this.pots = 1;
         this.restLeft = 1;
     }
 
     public async chooseTraits() {
-        // GameLogic.clearConsole();
-        console.log("Choose a trait")
-        // GameLogic.printHeading("Choose a trait");
-        // console.log("(1) " + atkUpgrades[numAtkUpgrades]);
-        // console.log("(2) " + defUpgrades[numDefUpgrades]);
+        console.clear()
+        Printer.heading("Choose a trait");
         console.log(`(1) ${this.atkUpgrades[this.numAtkUpgrades]}`)
         console.log(`(2) ${this.defUpgrades[this.numDefUpgrades]}`)
-        // int input = GameLogic.readInt("-> ", 2);
-        const { choice } = await prompt.get(['choice'])
-        // GameLogic.clearConsole();
-        if (Number(choice) === 1) {
-            // GameLogic.printHeading("You choose " + atkUpgrades[numAtkUpgrades] + "!");
-            console.log(`You choose ${this.atkUpgrades[this.numAtkUpgrades]} !`)
+        const choice: number = await GameLogic.readInt(2);
+        console.clear()
+        if (choice === 1) {
+            Printer.heading("You choose " + this.atkUpgrades[this.numAtkUpgrades] + "!");
             this.numAtkUpgrades++;
         } else {
-            // GameLogic.printHeading("You choose " + defUpgrades[numDefUpgrades] + "!");
-            console.log(`You choose ${this.defUpgrades[this.numDefUpgrades]} !`)
+            Printer.heading("You choose " + this.defUpgrades[this.numDefUpgrades] + "!");
             this.numDefUpgrades++;
         }
     }
 
     public getInformation() {
-        GameLogic.printHeading("CHARACTER INFO");
+        Printer.heading("CHARACTER INFO");
         console.log(this.name + "\tHP: " + this.hp + "/" + this.maxHp);
-        GameLogic.printSeparator(20);
+        Printer.separator(20);
         console.log("XP: " + this.xp + "\tGold: " + this.gold);
-        GameLogic.printSeparator(20);
-        console.log("# of Rests: " + this.restLeft);
-        GameLogic.printSeparator(20);
-    
+        Printer.separator(20);
+        console.log("# of Rests: " + this.restLeft + "\n# of Potions: " + this.pots);
+        Printer.separator(20);
+
         if (this.numAtkUpgrades > 0) {
             console.log("Offensive trait: " + this.atkUpgrades[this.numAtkUpgrades - 1]);
         }
@@ -61,8 +57,42 @@ export class Player extends Character {
         }
     }
 
+    public setAlive(isAlive: boolean) {
+        super.setAlive(isAlive);
+        if (!this.isAlive) {
+            console.clear()
+            Printer.heading("You died ...");
+            Printer.heading("You earned " + this.xp + " XP on your journey. Try to earn more next time.");
+        }
+    }
+
+    public async rest() {
+        console.clear()
+        if (this.restLeft >= 1) {
+            Printer.heading("Do you want to take a  rest? (" + this.restLeft + " rest(s) left).");
+            console.log("(1) Yes\n(2) No, not now.");
+
+            const input: number = await GameLogic.readInt(2);
+            if (input == 1) {
+                console.clear()
+                if (this.hp < this.maxHp) {
+                    const hpRestored: number = Math.floor(Math.random() * (this.xp / 4 + 1) + 10);
+                    this.hp += hpRestored;
+                    if (this.hp > this.maxHp)
+                        this.hp = this.maxHp;
+                    console.log("You took a rest and restored up to " + hpRestored + " health.");
+                    console.log("You're now at " + this.hp + "/" + this.maxHp + " health.");
+                    this.restLeft--;
+                } else {
+                    console.log("You're at full health. You don't need to rest now!");
+                }
+                await GameLogic.toContinue();
+            }
+        }
+    }
+
     public attack(): number {
-        return (Math.random()
+        return Math.floor(Math.random()
             *
             (this.xp / 4 + this.numAtkUpgrades * 3 + 3) + this.xp
             /
@@ -70,7 +100,7 @@ export class Player extends Character {
     }
 
     public defend(): number {
-        return (Math.random()
+        return Math.floor(Math.random()
             *
             (this.xp / 4 + this.numDefUpgrades * 3 + 3) + this.xp
             /
